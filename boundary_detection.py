@@ -12,8 +12,6 @@ from zipfile import ZipFile
 import warnings
 
 import pytorch_lightning as pl
-from orca_lite import init_orca_lite
-from orca_lite.learn import Trainer
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 
@@ -23,22 +21,14 @@ from model import UNET
 from utils import get_df
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--ipex', action='store_true', default=False,
-                    help='use intel pytorch extension')
-parser.add_argument('--data_path', default='../../data/carvana-image-masking-challenge',
+parser.add_argument('--data_path', default='./data/',
                     help='path to carvana-image-masking-challenge')
-parser.add_argument('-j', '--jemalloc', action='store_false', default=True,
-                    help='whether to use jemalloc')
-parser.add_argument('-o', '--openmp', action='store_false', default=True,
-                    help='whether to use openmp')
-parser.add_argument('--num_processes', default=1, type=int,
-                    help='number of processes using DDP')
+parser.add_argument('--layers', default=4, type=int, help='number of layers in encoder')
+parser.add_argument('--gpu', default=0, type=int, help='gpu id')
 args = parser.parse_args()
 
 
 def main():
-    warnings.filterwarnings("ignore", category=UserWarning)  # Supress pytorch dataset UserWarning
-    init_orca_lite(args.jemalloc, args.openmp)
 
     # Extract files
     targets = ["train", "train_masks", "train_masks.csv"]
@@ -69,14 +59,11 @@ def main():
     print("# of train: {} # of val: {}".format(len(train_dataset), len(valid_dataset)))
 
     # Initialize model
-    model = UNET(3, 1)
+    features = [64, 128, 256, 512, 1024]
+    model = UNET(3, 1, features=features[:args.layers])
 
     # Train
-    if args.ipex:
-        print("NUM_PROCESSES PER CPU:", args.num_processes)
-        trainer = Trainer(max_epochs=1, num_processes=args.num_processes)
-    else:
-        trainer = pl.Trainer(max_epochs=1)
+    trainer = pl.Trainer(max_epochs=5, devices=[args.gpu,], auto_select_gpus=True, accelerator='gpu')
     trainer.fit(model, train_loader, valid_loader)
     throughput = len(train_dataset) / model.train_time
 

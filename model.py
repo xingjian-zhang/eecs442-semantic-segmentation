@@ -38,6 +38,8 @@ class UNET(pl.LightningModule):
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
         self.criterion = nn.BCEWithLogitsLoss()
         self.train_time = 0
+        self.layers = len(features)
+        self.logfile = "unet_l{}.log".format(self.layers)
 
         # Down part of Unet
         for feature in features:
@@ -98,7 +100,7 @@ class UNET(pl.LightningModule):
         predictions = self.forward(data)
         os.makedirs("predictions/", exist_ok=True)
         self.visualize([data[0], targets[0], predictions[0]],
-                       file_path="predictions/epoch{}_{}.jpeg".format(self.current_epoch, batch_idx))
+                       file_path="predictions/l{}_epoch{}_{}.jpeg".format(self.layers, self.current_epoch, batch_idx))
         loss = self.criterion(predictions, targets)
         predictions = torch.sigmoid(predictions)
         predictions = (predictions >= .5).float()
@@ -109,17 +111,17 @@ class UNET(pl.LightningModule):
         accuracy = num_correct / num_pixels
         metrics = {'val_loss': loss, "val_accuracy": accuracy,
                    "dice_score": dice_score}
-        # print(metrics)
         return metrics
 
     def validation_epoch_end(self, outputs):
         df = pd.DataFrame(outputs)
         time.sleep(0.5)  # Avoid messing up progress bar
-        print("\n val_loss: {}\n val_accuracy: {}\n dice_score: {}\n".format(
-            df["val_loss"].mean(),
-            df["val_accuracy"].mean(),
-            df["dice_score"].mean()
-        ))
+        with open(self.logfile, "a") as fp:
+            fp.write("\n val_loss: {}\n val_accuracy: {}\n dice_score: {}\n".format(
+                df["val_loss"].mean(),
+                df["val_accuracy"].mean(),
+                df["dice_score"].mean()
+            ))
 
     @staticmethod
     def visualize(display_list, title_list=["Input", "True Mask", "Pred Mask"], file_path=None):

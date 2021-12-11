@@ -14,6 +14,7 @@ import warnings
 import pytorch_lightning as pl
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
+import numpy as np
 
 from config import BATCH_SIZE, NUM_WORKERS, PIN_MEMORY, TEST_BATCH_SIZE
 from dataset import CarvanaDataset
@@ -25,6 +26,7 @@ parser.add_argument('--data_path', default='./data/',
                     help='path to carvana-image-masking-challenge')
 parser.add_argument('--layers', default=4, type=int, help='number of layers in encoder')
 parser.add_argument('--gpu', default=0, type=int, help='gpu id')
+parser.add_argument('--channel_scale', default=1, type=int, help='scale down')
 args = parser.parse_args()
 
 
@@ -60,6 +62,8 @@ def main():
 
     # Initialize model
     features = [64, 128, 256, 512, 1024]
+    features = np.array(features)
+    features //= args.scale    
     model = UNET(3, 1, features=features[:args.layers])
 
     # Train

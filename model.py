@@ -107,7 +107,7 @@ class UNET(pl.LightningModule):
         num_correct = (predictions == targets).sum()
         num_pixels = torch.numel(predictions)
         dice_score = (2 * (predictions * targets).sum()) / \
-            ((predictions + targets).sum() + 1e-8) / len(data) * 100
+            ((predictions + targets).sum() + 1e-8)
         accuracy = num_correct / num_pixels
         metrics = {'val_loss': loss, "val_accuracy": accuracy,
                    "dice_score": dice_score}

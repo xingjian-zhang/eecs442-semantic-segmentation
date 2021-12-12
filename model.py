@@ -31,7 +31,7 @@ class DoubleConv(pl.LightningModule):
 
 
 class UNET(pl.LightningModule):
-    def __init__(self, in_channels=3, out_channels=1, features=[64, 128, 256, 512]):
+    def __init__(self, in_channels=3, out_channels=1, features=[64, 128, 256, 512], scale=1):
         super(UNET, self).__init__()
         self.ups = nn.ModuleList()
         self.downs = nn.ModuleList()
@@ -39,7 +39,8 @@ class UNET(pl.LightningModule):
         self.criterion = nn.BCEWithLogitsLoss()
         self.train_time = 0
         self.layers = len(features)
-        self.logfile = "unet_l{}.log".format(self.layers)
+        self.scale = scale
+        self.logfile = "unet_scale{}.log".format(self.scale)
 
         # Down part of Unet
         for feature in features:
@@ -100,7 +101,7 @@ class UNET(pl.LightningModule):
         predictions = self.forward(data)
         os.makedirs("predictions/", exist_ok=True)
         self.visualize([data[0], targets[0], predictions[0]],
-                       file_path="predictions/l{}_epoch{}_{}.jpeg".format(self.layers, self.current_epoch, batch_idx))
+                       file_path="predictions/scale{}_epoch{}_{}.jpeg".format(self.scale, self.current_epoch, batch_idx))
         loss = self.criterion(predictions, targets)
         predictions = torch.sigmoid(predictions)
         predictions = (predictions >= .5).float()

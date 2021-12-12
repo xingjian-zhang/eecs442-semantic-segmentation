@@ -26,7 +26,7 @@ parser.add_argument('--data_path', default='./data/',
                     help='path to carvana-image-masking-challenge')
 parser.add_argument('--layers', default=4, type=int, help='number of layers in encoder')
 parser.add_argument('--gpu', default=0, type=int, help='gpu id')
-parser.add_argument('--channel_scale', default=1, type=int, help='scale down')
+parser.add_argument('-c', '--scale', default=1, type=int, help='scale down')
 args = parser.parse_args()
 
 
@@ -64,7 +64,7 @@ def main():
     features = [64, 128, 256, 512, 1024]
     features = np.array(features)
     features //= args.scale    
-    model = UNET(3, 1, features=features[:args.layers])
+    model = UNET(3, 1, features=features[:args.layers], scale=args.scale)
 
     # Train
     trainer = pl.Trainer(max_epochs=5, devices=[args.gpu,], auto_select_gpus=True, accelerator='gpu')
